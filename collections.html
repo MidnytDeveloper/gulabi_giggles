@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collection | Gulabi Giggles</title>
+  <meta name="description" content="Explore the Gulabi Giggles collection of thoughtfully designed kidswear.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="collections.css">
+</head>
+<body>
+<header class="header">
+  <div class="nav-wrap">
+    <nav class="nav-left" aria-label="Main navigation">
+      <a href="index.html">Home</a>
+      <a class="active" href="collections.html">Collection</a>
+      <a href="index.html#about">About Us</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+    <a class="header-logo" href="index.html" aria-label="Gulabi Giggles home"><img src="images/logo.png" alt="Gulabi Giggles"></a>
+    <div class="nav-right">
+      <button class="search-btn" type="button" aria-label="Search"></button>
+      <a class="instagram-btn" href="index.html#contact" aria-label="Instagram">◎</a>
+      <a class="shop-now" href="index.html#shop">Shop Now <span class="bag">▢</span></a>
+    </div>
+  </div>
+</header>
+
+<main class="collection-page">
+  <section class="collection-hero">
+    <p class="eyebrow">Gulabi Giggles</p>
+    <h1>OUR COLLECTION</h1>
+    <div class="heading-ornament"><span></span>♢<span></span></div>
+    <p>Little looks, made to be remembered.</p>
+  </section>
+
+  <section class="catalog-wrap" aria-label="All Gulabi Giggles products">
+    <div id="catalogGrid" class="catalog-grid"></div>
+  </section>
+
+  <div class="collection-footer">Little moments. Beautifully dressed. &nbsp; <a href="index.html">Back to Home</a></div>
+</main>
+
+<script src="product-store.js"></script>
+<script>
+(async function(){
+  const catalog=await GGStore.getProducts();
+  const grid=document.getElementById('catalogGrid');
+
+  function esc(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function safeUrl(v){try{const u=new URL(String(v||'').trim());return /^https?:$/.test(u.protocol)?u.href:'';}catch{return '';}}
+
+  for(const product of catalog){
+    const ordered=GGStore.orderedImages(product);
+    const images=[];
+    for(const image of ordered) images.push(await GGStore.imageSrc(image));
+    if(!images.length) continue;
+
+    const card=document.createElement('article');
+    card.className='catalog-card';
+    card.innerHTML=`
+      <div class="catalog-image">
+        <div class="catalog-slides"></div>
+        ${images.length>1?'<button class="photo-nav photo-prev" aria-label="Previous photo">‹</button><button class="photo-nav photo-next" aria-label="Next photo">›</button>':''}
+        <button class="info-button" aria-label="Show product description">i</button>
+        <div class="description-popover" role="dialog" aria-label="Product description">
+          <button class="close-info" aria-label="Close description">×</button>
+          <strong>${esc(product.name)}</strong>
+          <p>${esc(product.description||'Description coming soon.')}</p>
+        </div>
+        ${images.length>1?'<div class="photo-dots"></div>':''}
+      </div>
+      <div class="catalog-info">
+        <h2>${esc(product.name)}</h2>
+        ${(safeUrl(product.amazonUrl)||safeUrl(product.flipkartUrl))?`
+        <div class="marketplace-buttons" aria-label="Buy this product">
+          ${safeUrl(product.amazonUrl)?'<a class="market-btn amazon-btn" href="'+esc(safeUrl(product.amazonUrl))+'" target="_blank" rel="noopener noreferrer" aria-label="Buy on Amazon"><img src="images/amazon-logo-user.png" alt="Amazon"></a>':''}
+          ${safeUrl(product.flipkartUrl)?'<a class="market-btn flipkart-btn" href="'+esc(safeUrl(product.flipkartUrl))+'" target="_blank" rel="noopener noreferrer" aria-label="Buy on Flipkart"><img src="images/flipkart-logo-user.jpeg" alt="Flipkart"></a>':''}
+        </div>`:''}
+      </div>`;
+
+    const stage=card.querySelector('.catalog-slides');
+    images.forEach((src,i)=>{
+      const img=document.createElement('img');img.src=src;img.alt=`${product.name} — image ${i+1}`;img.loading=i===0?'eager':'lazy';img.className='catalog-slide'+(i===0?' active':'');stage.appendChild(img);
+      card.querySelector('.photo-dots')?.insertAdjacentHTML('beforeend',`<span class="photo-dot${i===0?' active':''}"></span>`);
+    });
+    let current=0;
+    const slides=[...stage.querySelectorAll('.catalog-slide')], dots=[...card.querySelectorAll('.photo-dot')];
+    const show=i=>{
+      current=(i+slides.length)%slides.length;
+      slides.forEach((s,n)=>s.classList.toggle('active',n===current));
+      dots.forEach((d,n)=>d.classList.toggle('active',n===current));
+    };
+    card.querySelector('.photo-prev')?.addEventListener('click',e=>{e.stopPropagation();show(current-1)});
+    card.querySelector('.photo-next')?.addEventListener('click',e=>{e.stopPropagation();show(current+1)});
+    const info=card.querySelector('.info-button'), pop=card.querySelector('.description-popover');
+    info.addEventListener('click',e=>{e.stopPropagation();pop.classList.toggle('open')});
+    card.querySelector('.close-info').addEventListener('click',e=>{e.stopPropagation();pop.classList.remove('open')});
+    card.addEventListener('mouseleave',()=>pop.classList.remove('open'));
+    grid.appendChild(card);
+  }
+})();
+</script>
+</body>
+</html>
